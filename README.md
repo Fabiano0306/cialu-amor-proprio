@@ -35,14 +35,39 @@ git clone https://github.com/Fabiano0306/cialu-amor-proprio.git
 cd cialu-amor-proprio
 Instale as dependências:
 
-bash
-Copiar
-Editar
 npm install
 Rode o projeto:
 
-bash
-Copiar
-Editar
+
 npm run dev
 Acesse em: http://localhost:5173
+
+🌍 Deploy
+Este site é hospedado e atualizado automaticamente pelo Netlify a cada novo push no GitHub.
+
+🔗 Link de produção: https://cialu.netlify.app (ajuste esse link com o seu real)
+
+🖼️ Imagem da logo
+A logo da CIALU está disponível em PNG com fundo transparente na pasta /public/lovable-uploads/.
+
+📬 Contato
+Entre em contato pelo WhatsApp: (12) 99140-3657
+Siga no Instagram: @desenvolvedor_fabiano
+
+👨‍💻 Desenvolvedor
+Fabiano Santos
+
+
+---
+
+### ✅ Próximo passo:
+
+1. Crie um arquivo chamado `README.md` na raiz do projeto.
+2. Cole esse conteúdo.
+3. Faça o commit e push:
+
+```bash
+git add README.md
+git commit -m "adiciona README com informações do projeto"
+git push
+
