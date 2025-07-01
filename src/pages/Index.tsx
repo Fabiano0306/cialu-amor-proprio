@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Heart, Star, Plus, Minus, X, Menu, Home, Grid3X3, Info, Phone, Instagram, Trash2 } from 'lucide-react';
+import {
+  ShoppingBag, Heart, Star, Plus, Minus, X, Menu, Home,
+  Grid3X3, Info, Phone, Instagram, Trash2
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { set } from 'date-fns';
 
 interface Product {
   id: number;
@@ -65,7 +69,7 @@ const mockProducts: Product[] = [
     id: 5,
     name: "Vestido Longo Branco",
     price: 349.90,
-    image: "https://images.unsplash.com/photo-1566479179817-99219c02d516?w=400&h=600&fit=crop",
+    image: "https://images.unsplash.com/photo-1551803091-e20673f15770?w=400&h=600&fit=crop",
     description: "Vestido longo ideal para eventos especiais",
     sizes: ["PP", "P", "M", "G", "GG", "XG"]
   },
@@ -89,7 +93,7 @@ const mockProducts: Product[] = [
     id: 8,
     name: "Top Elegante",
     price: 129.90,
-    image: "https://images.unsplash.com/photo-1566479179817-99219c02d516?w=400&h=600&fit=crop",
+    image: "https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=400&h=600&fit=crop",
     description: "Top com design moderno e sofisticado",
     sizes: ["PP", "P", "M", "G", "GG", "XG"]
   }
@@ -102,75 +106,107 @@ const Index = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
+  const [cep, setCep] = useState("");
+  const [cepInfo, setCepInfo] = useState<{ uf: string; localidade: string } | null>(null);
+  const [frete, setFrete] = useState(0);
   const { toast } = useToast();
 
-  const addToCart = (product: Product, size: string, qty: number) => {
-    const existingItem = cart.find(item => item.id === product.id && item.selectedSize === size);
-    
-    if (existingItem) {
-      setCart(cart.map(item => 
-        item.id === product.id && item.selectedSize === size
-          ? { ...item, quantity: item.quantity + qty }
-          : item
-      ));
-    } else {
-      setCart([...cart, { ...product, selectedSize: size, quantity: qty }]);
+  // Função para adicionar produto ao carrinho
+  const addToCart = (product: Product, size: string, quantity: number) => {
+    if (!size) {
+      toast({ title: "Selecione um tamanho", description: "Escolha o tamanho antes de adicionar ao carrinho." });
+      return;
     }
-
-    toast({
-      title: "Produto adicionado!",
-      description: `${product.name} foi adicionado ao seu carrinho.`,
-    });
-
+    const existingIndex = cart.findIndex(
+      (item) => item.id === product.id && item.selectedSize === size
+    );
+    if (existingIndex !== -1) {
+      // Atualiza a quantidade se já existir
+      const updatedCart = [...cart];
+      updatedCart[existingIndex].quantity += quantity;
+      setCart(updatedCart);
+    } else {
+      setCart([
+        ...cart,
+        {
+          ...product,
+          selectedSize: size,
+          quantity,
+        },
+      ]);
+    }
     setSelectedProduct(null);
     setSelectedSize("");
     setQuantity(1);
+    toast({ title: "Adicionado ao carrinho", description: `${product.name} (${size})` });
   };
 
-  const removeFromCart = (productId: number, size: string) => {
-    setCart(cart.filter(item => !(item.id === productId && item.selectedSize === size)));
-  };
+  const [enderecoCompleto, setEnderecoCompleto] = useState("");
 
-  const updateQuantity = (productId: number, size: string, newQuantity: number) => {
-    if (newQuantity === 0) {
-      removeFromCart(productId, size);
+
+  const calcularFrete = async () => {
+    const cepLimpo = cep.replace(/\D/g, "");
+    if (cepLimpo.length !== 8) {
+      toast({ title: "CEP inválido", description: "Digite um CEP com 8 dígitos." });
       return;
     }
 
-    setCart(cart.map(item =>
-      item.id === productId && item.selectedSize === size
-        ? { ...item, quantity: newQuantity }
-        : item
-    ));
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const data = await response.json();
+
+      if (data.erro) {
+        toast({ title: "CEP não encontrado", description: "Verifique o CEP digitado." });
+        return;
+      }
+
+      setCepInfo({ uf: data.uf, localidade: data.localidade });
+
+      switch (data.uf.toLowerCase()) {
+        case "sp": setFrete(25); break;
+        case "rj": setFrete(40); break;
+        case "mg": setFrete(20); break;
+        case "pr": setFrete(48); break;
+        case "rs": setFrete(57); break;
+        case "sc": setFrete(60); break;
+        default: setFrete(22);
+      }
+
+      toast({ title: "Frete calculado", description: `Local: ${data.localidade} - ${data.uf}` });
+    } catch (error) {
+      toast({ title: "Erro ao buscar CEP", description: "Tente novamente mais tarde." });
+    }
   };
 
-  const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
-
-  const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
-  };
-
-  const clearCart = () => {
-    setCart([]);
-    toast({
-      title: "Carrinho limpo!",
-      description: "Todos os itens foram removidos do seu carrinho.",
-    });
-  };
+  const getTotalPrice = () => cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  const getTotalWithFrete = () => getTotalPrice() + frete;
+  const getTotalItems = () => cart.reduce((total, item) => total + item.quantity, 0);
 
   const finalizePurchase = () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !cepInfo) return;
 
-    const orderDetails = cart.map(item => 
-      `${item.name} - Tamanho: ${item.selectedSize} - Quantidade: ${item.quantity} - Valor: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
+    const orderDetails = cart.map(item =>
+      `${item.name} - Tamanho: ${item.selectedSize} - Quantidade: ${item.quantity} - Valor: R$${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
     ).join('\n');
 
-    const totalValue = getTotalPrice().toFixed(2).replace('.', ',');
-    const message = `Olá! Gostaria de finalizar minha compra:\n\n${orderDetails}\n\n*Total: R$ ${totalValue}*`;
+    const totalValue = getTotalWithFrete().toFixed(2).replace('.', ',');
+    const freteValue = frete.toFixed(2).replace('.', ',');
+    const message = `Olá! Gostaria de finalizar minha compra:\n
+*Produtos:*
+${cart.map(item => 
+  `- ${item.name}\n*Tamanho:* ${item.selectedSize} \n*Quantidade:* ${item.quantity} \n*Valor:* R$${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
+).join('\n\n')}
+\n---------------------------------\n
+*Informações de entrega:*\n
+*CEP:* ${cep}\n
+*Local:* ${cepInfo?.localidade} - ${cepInfo?.uf}\n
+*Endereço completo:* ${enderecoCompleto || "Não informado"}\n
+*Valor do Frete:* R$${frete.toFixed(2).replace('.', ',')}\n
+\n---------------------------------\n
+\n*Valor total com frete:* R$${getTotalWithFrete().toFixed(2).replace('.', ',')}`;
+
     const whatsappUrl = `https://wa.me/5547996224032?text=${encodeURIComponent(message)}`;
-    
+
     window.open(whatsappUrl, '_blank');
   };
 
@@ -192,12 +228,13 @@ const Index = () => {
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
+
             {/* Logo */}
             <div className="flex items-center space-x-2">
               <img 
-                src="/lovable-uploads/logo.png" 
-                alt="CIALU - Moda Feminina Elegante" 
-                className="h-12 w-auto"
+              src="/lovable-uploads/logo.png" 
+              alt="CIALU - Moda Feminina Elegante" 
+              className="h-20 w-auto"
               />
             </div>
 
@@ -286,18 +323,106 @@ const Index = () => {
         </div>
       )}
 
-      {/* Hero Section */}
-      <section id="inicio" className="py-20">
-        <div className="container mx-auto px-4 text-center">
-          <img
-  src="/lovable-uploads/logo.png"
-  alt="CIALU - Moda Feminina"
-  className="mx-auto"
-  style={{ maxHeight: 420 }}
-/>
+{/* Fundo animado com círculos flutuantes preto e branco (minimalista, fixo no topo da página) */}
+<div
+  className="pointer-events-none absolute top-0 left-0 w-full h-[420px] md:h-[520px] z-0 overflow-hidden"
+  style={{
+    position: "absolute",
+    // Gradiente para fade-out na parte de baixo
+    maskImage:
+      "linear-gradient(to bottom, black 80%, transparent 100%)",
+    WebkitMaskImage:
+      "linear-gradient(to bottom, black 80%, transparent 100%)",
+  }}
+>
+  {[...Array(10)].map((_, i) => {
+    // Propriedades aleatórias para cada sparkle
+    const left = Math.random() * 100;
+    const size = 10 + Math.random() * 16;
+    const duration = 8 + Math.random() * 10;
+    const delay = Math.random() * 10;
+    const opacity = 0.18 + Math.random() * 0.22;
+    const top = Math.random() * 40;
+    const isBlack = Math.random() > 0.5;
+    const rotate = Math.random() * 360;
 
-        </div>
-      </section>
+    return (
+      <div
+        key={i}
+        className="absolute"
+        style={{
+          left: `${left}%`,
+          top: `${top}%`,
+          width: `${size}px`,
+          height: `${size}px`,
+          opacity,
+          animation: `floatSparkle${i} ${duration}s linear infinite`,
+          animationDelay: `${delay}s`,
+          pointerEvents: "none",
+          transform: `rotate(${rotate}deg)`,
+        }}
+      >
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 20 20"
+          fill="none"
+          style={{
+            display: "block",
+            filter: isBlack
+              ? "drop-shadow(0 0 6px #0008)"
+              : "drop-shadow(0 0 6px #fff8)",
+          }}
+        >
+          <g>
+            <polygon
+              points="10,1 12,8 19,10 12,12 10,19 8,12 1,10 8,8"
+              fill={isBlack ? "#111" : "#fff"}
+              stroke={isBlack ? "#fff" : "#111"}
+              strokeWidth="1.2"
+              opacity="0.95"
+            />
+          </g>
+        </svg>
+      </div>
+    );
+  })}
+  <style>
+    {`
+      ${[...Array(10)].map((_, i) => {
+        const sway = 10 + Math.random() * 24;
+        return `
+          @keyframes floatSparkle${i} {
+            0% {
+              transform: translateY(0px) translateX(0px) scale(1) rotate(0deg);
+              opacity: 0.7;
+            }
+            50% {
+              transform: translateY(180px) translateX(${sway}px) scale(1.08) rotate(20deg);
+              opacity: 0.95;
+            }
+            100% {
+              transform: translateY(420px) translateX(${-sway}px) scale(1.13) rotate(0deg);
+              opacity: 0;
+            }
+          }
+        `;
+      }).join('\n')}
+    `}
+  </style>
+</div>
+
+      {/* Hero Section */}
+      <section id="inicio" className="py-20 relative">
+  <div className="container mx-auto px-4 text-center relative z-10">
+    <img
+      src="/lovable-uploads/logo.png"
+      alt="CIALU - Moda Feminina"
+      className="mx-auto"
+      style={{ maxHeight: 420 }}
+    />
+  </div>
+</section>
 
       {/* Seção de Efeito */}
       <section className="py-16 bg-white">
@@ -317,7 +442,7 @@ const Index = () => {
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-playfair font-medium text-center mb-12">
-            💖 Favoritos da Semana
+             Favoritos da Semana
           </h2>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -376,31 +501,54 @@ const Index = () => {
             ))}
           </div>
         </div>
+         <div className="container mx-auto px-4">
+          <hr className="my-16 border-gray-200" />
+        </div>
       </section>
 
       {/* Sobre a CIALU */}
-      <section id="sobre" className="py-5 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-playfair font-medium mb-12">
-          Sobre a CIALU
-        </h2>
-        <div className="prose prose-lg mx-auto text-gray-700 font-inter leading-relaxed">
-          <p className="text-lg md:text-xl mb-6">
-            A CIALU nasceu para vestir o amor-próprio com elegância.
-          </p>
-          <p className="text-base md:text-lg mb-6">
-            Somos uma loja pensada para mulheres que valorizam conforto, estilo e autenticidade. 
-            Nossas peças são escolhidas com carinho, com foco em cortes que valorizam todos os corpos e criam experiências memoráveis.
-          </p>
-          <p className="text-base md:text-lg font-medium">
-            Aqui, você não compra apenas roupas — você investe em si mesma.
-          </p>
+      <section
+        id="sobre"
+        className="relative py-20 bg-gradient-to-b from-white via-gray-50 to-gray-100 overflow-hidden"
+      >
+        {/* Ornamental SVG background (tons de cinza) */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 1440 320"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="absolute top-0 left-0 w-full h-40 opacity-30"
+          >
+            <path
+              fill="#e5e7eb"
+              d="M0,160L60,154.7C120,149,240,139,360,154.7C480,171,600,213,720,218.7C840,224,960,192,1080,186.7C1200,181,1320,203,1380,213.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"
+            />
+          </svg>
         </div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-4xl md:text-5xl font-playfair font-bold mb-8 text-black tracking-tight drop-shadow-sm">
+              Sobre a <span className="text-black">CIALU</span>
+            </h2>
+            <div className="mx-auto text-gray-800 font-inter leading-relaxed text-lg md:text-xl">
+              <p className="mb-6 italic text-black text-2xl font-light">
+                A CIALU nasceu para vestir o amor próprio com elegância.
+              </p>
+              <p className="mb-6 text-base md:text-lg text-black">
+                Somos uma loja pensada para mulheres que valorizam <span className="font-semibold text-black">conforto</span>, <span className="font-semibold text-black">estilo</span> e <span className="font-semibold text-black">autenticidade</span>.
+                Nossas peças são escolhidas com carinho, com foco em cortes que valorizam todos os corpos e criam experiências memoráveis.
+              </p>
+              <p className="text-lg md:text-xl font-semibold text-black">
+                Aqui, você não compra apenas roupas, você investe em si mesma.
+              </p>
+            </div>
+            
           </div>
         </div>
         <div className="container mx-auto px-4">
-          <hr className="my-12 border-gray-200" />
+          <hr className="my-16 border-gray-200" />
         </div>
       </section>
 
@@ -494,70 +642,132 @@ const Index = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-4">
-                {cart.length === 0 ? (
-                  <div className="text-center py-8">
-                    <ShoppingBag size={48} className="mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-500 font-inter">Seu carrinho está vazio</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {cart.map((item) => (
-                      <div key={`${item.id}-${item.selectedSize}`} className="flex space-x-3 border-b pb-4">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-16 h-20 object-cover rounded"
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm font-inter">{item.name}</h4>
-                          <p className="text-xs text-gray-600 mb-1 font-inter">{item.description}</p>
-                          <p className="text-xs text-gray-600 mb-2 font-inter">Tamanho: {item.selectedSize}</p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity - 1)}
-                                className="w-6 h-6 flex items-center justify-center border rounded"
-                              >
-                                <Minus size={12} />
-                              </button>
-                              <span className="text-sm font-inter">{item.quantity}</span>
-                              <button
-                                onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}
-                                className="w-6 h-6 flex items-center justify-center border rounded"
-                              >
-                                <Plus size={12} />
-                              </button>
-                            </div>
-                            <button
-                              onClick={() => removeFromCart(item.id, item.selectedSize)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                          <p className="text-sm font-semibold mt-2 font-inter">
-                            R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+  {cart.length === 0 ? (
+    <div className="text-center py-8">
+      <ShoppingBag size={48} className="mx-auto text-gray-400 mb-4" />
+      <p className="text-gray-500 font-inter">Seu carrinho está vazio</p>
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {cart.map((item) => (
+        <div key={`${item.id}-${item.selectedSize}`} className="flex space-x-3 border-b pb-4">
+          <img
+            src={item.image}
+            alt={item.name}
+            className="w-16 h-20 object-cover rounded"
+          />
+          <div className="flex-1">
+            <h4 className="font-medium text-sm font-inter">{item.name}</h4>
+            <p className="text-xs text-gray-600 mb-1 font-inter">{item.description}</p>
+            <p className="text-xs text-gray-600 mb-2 font-inter">Tamanho: {item.selectedSize}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    const newQty = item.quantity - 1;
+                    if (newQty > 0) {
+                      setCart(cart.map(ci => ci.id === item.id && ci.selectedSize === item.selectedSize
+                        ? { ...ci, quantity: newQty }
+                        : ci
+                      ));
+                    } else {
+                      setCart(cart.filter(ci => !(ci.id === item.id && ci.selectedSize === item.selectedSize)));
+                    }
+                  }}
+                  className="w-6 h-6 flex items-center justify-center border rounded"
+                >
+                  <Minus size={12} />
+                </button>
+                <span className="text-sm font-inter">{item.quantity}</span>
+                <button
+                  onClick={() => {
+                    setCart(cart.map(ci => ci.id === item.id && ci.selectedSize === item.selectedSize
+                      ? { ...ci, quantity: item.quantity + 1 }
+                      : ci
+                    ));
+                  }}
+                  className="w-6 h-6 flex items-center justify-center border rounded"
+                >
+                  <Plus size={12} />
+                </button>
               </div>
+              <button
+                onClick={() => setCart(cart.filter(ci => !(ci.id === item.id && ci.selectedSize === item.selectedSize)))}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-sm font-semibold mt-2 font-inter">
+              R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
 
               {cart.length > 0 && (
                 <div className="border-t p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-lg font-semibold font-inter">Total:</span>
-                    <span className="text-xl font-bold font-inter">
+
+                  {/* Campo CEP */}
+                  <div className="mb-4 space-y-2">
+                    <label className="block text-sm font-medium font-inter">CEP</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Digite o CEP"
+                        value={cep}
+                        onChange={(e) => setCep(e.target.value)}
+                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                      />
+                      <Button onClick={calcularFrete}>Calcular</Button>
+                    </div>
+                    {cepInfo && (
+                      <p className="text-xs text-gray-600">Destino: {cepInfo.localidade} - {cepInfo.uf}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 mt-4">
+                    <label className="block text-sm font-medium font-inter">Endereço completo (Rua/Avenida e número)</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Rua das Flores, 123"
+                      value={enderecoCompleto}
+                      onChange={(e) => setEnderecoCompleto(e.target.value)}
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <br />
+
+
+                  {/* Totais */}
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium font-inter">Subtotal:</span>
+                    <span className="text-sm font-inter">
                       R$ {getTotalPrice().toFixed(2).replace('.', ',')}
                     </span>
                   </div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium font-inter">Frete:</span>
+                    <span className="text-sm font-inter">
+                      R$ {frete.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-lg font-semibold font-inter">Total:</span>
+                    <span className="text-xl font-bold font-inter">
+                      R$ {getTotalWithFrete().toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+
                   <div className="space-y-3">
                     <Button
                       variant="outline"
                       className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-inter"
-                      onClick={clearCart}
+                      onClick={() => setCart([])}
                     >
                       <Trash2 size={16} className="mr-2" />
                       Limpar carrinho
@@ -565,6 +775,7 @@ const Index = () => {
                     <Button
                       className="w-full bg-green-600 hover:bg-green-700 text-white font-inter"
                       onClick={finalizePurchase}
+                      disabled={!cepInfo}
                     >
                       Finalizar Compra
                     </Button>

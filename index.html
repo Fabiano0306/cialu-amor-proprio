@@ -5,7 +5,29 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
+    <style>
+      @keyframes ventoDeslizando {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.vento-flutuante {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100px;
+  opacity: 0.15;
+  pointer-events: none;
+  animation: ventoDeslizando 60s linear infinite;
+  z-index: 0;
+}
+
+    </style>
     <!-- SEO Otimizado -->
     <title>CIALU | Moda Feminina Elegante & Sofisticada – Vista Amor Próprio</title>
     <meta name="description" content="Descubra roupas femininas elegantes e sofisticadas na CIALU. Moda com amor próprio, conforto e estilo para valorizar sua essência. Boutique online premium." />
