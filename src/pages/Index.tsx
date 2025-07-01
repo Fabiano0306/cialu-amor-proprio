@@ -138,7 +138,12 @@ const Index = () => {
     setSelectedProduct(null);
     setSelectedSize("");
     setQuantity(1);
-    toast({ title: "Adicionado ao carrinho", description: `${product.name} (${size})` });
+    toast({
+  title: "Adicionado ao carrinho",
+  description: `${product.name} (${size})`,
+  duration: 3000 // desaparece após 3 segundos
+});
+
   };
 
   const [enderecoCompleto, setEnderecoCompleto] = useState("");
@@ -631,15 +636,22 @@ ${cart.map(item =>
 
       {/* Cart Sidebar */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50">
-          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="text-lg font-semibold font-playfair">Carrinho de Compras</h3>
-                <Button variant="ghost" size="sm" onClick={() => setIsCartOpen(false)}>
-                  <X size={20} />
-                </Button>
-              </div>
+  <div
+    className="fixed inset-0 z-50 bg-black/50"
+    onClick={() => setIsCartOpen(false)} // fechar ao clicar fora
+  >
+    <div
+      className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl"
+      onClick={(e) => e.stopPropagation()} // impedir fechamento ao clicar dentro
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold font-playfair">Carrinho de Compras</h3>
+          <Button variant="ghost" size="sm" onClick={() => setIsCartOpen(false)}>
+            <X size={20} />
+          </Button>
+        </div>
+
 
               <div className="flex-1 overflow-y-auto p-4">
   {cart.length === 0 ? (
