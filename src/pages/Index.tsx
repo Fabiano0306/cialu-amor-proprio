@@ -5,8 +5,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import { set } from 'date-fns';
+import { toast } from "sonner";
 
 interface Product {
   id: number;
@@ -109,12 +109,14 @@ const Index = () => {
   const [cep, setCep] = useState("");
   const [cepInfo, setCepInfo] = useState<{ uf: string; localidade: string } | null>(null);
   const [frete, setFrete] = useState(0);
-  const { toast } = useToast();
+  
 
   // Função para adicionar produto ao carrinho
   const addToCart = (product: Product, size: string, quantity: number) => {
     if (!size) {
-      toast({ title: "Selecione um tamanho", description: "Escolha o tamanho antes de adicionar ao carrinho." });
+      toast.error("Selecione um tamanho", {
+        description: "Escolha o tamanho antes de adicionar ao carrinho."
+      });
       return;
     }
     const existingIndex = cart.findIndex(
@@ -138,11 +140,14 @@ const Index = () => {
     setSelectedProduct(null);
     setSelectedSize("");
     setQuantity(1);
-    toast({
-  title: "Adicionado ao carrinho",
+    // ✅ Toast do Sonner com duração controlada
+toast.success("Adicionado ao carrinho", {
   description: `${product.name} (${size})`,
-  duration: 3000 // desaparece após 3 segundos
+  duration: 3000
 });
+
+
+
 
   };
 
@@ -152,7 +157,7 @@ const Index = () => {
   const calcularFrete = async () => {
     const cepLimpo = cep.replace(/\D/g, "");
     if (cepLimpo.length !== 8) {
-      toast({ title: "CEP inválido", description: "Digite um CEP com 8 dígitos." });
+      toast("CEP inválido. Digite um CEP com 8 dígitos.");
       return;
     }
 
@@ -161,7 +166,7 @@ const Index = () => {
       const data = await response.json();
 
       if (data.erro) {
-        toast({ title: "CEP não encontrado", description: "Verifique o CEP digitado." });
+        toast("CEP não encontrado. Verifique o CEP digitado.");
         return;
       }
 
@@ -177,9 +182,9 @@ const Index = () => {
         default: setFrete(22);
       }
 
-      toast({ title: "Frete calculado", description: `Local: ${data.localidade} - ${data.uf}` });
+      toast(`Frete calculado: Local - ${data.localidade} - ${data.uf}`);
     } catch (error) {
-      toast({ title: "Erro ao buscar CEP", description: "Tente novamente mais tarde." });
+      toast("Erro ao buscar CEP. Tente novamente mais tarde.");
     }
   };
 
