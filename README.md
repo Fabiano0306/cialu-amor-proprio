@@ -1,73 +1,73 @@
-# 👗 CIALU – Moda Feminina com Amor Próprio
+# Welcome to your Lovable project
 
-CIALU é um e-commerce de moda feminina que valoriza o amor-próprio, a elegância e a sofisticação. O projeto foi desenvolvido com foco na experiência do usuário, visual clean e fácil navegação.
+## Project info
 
----
+**URL**: https://lovable.dev/projects/7db7e384-65a7-44d3-9426-4685a85f8c16
 
-## ✨ Funcionalidades
+## How can I edit this code?
 
-- 🛍️ Catálogo de produtos com fotos e descrição
-- 📱 Design responsivo (mobile e desktop)
-- 🛒 Carrinho de compras com seleção de tamanho e quantidade
-- 💬 Finalização da compra via WhatsApp
-- 📸 Integração com Instagram
-- 🌐 Deploy automático via Netlify e GitHub
+There are several ways of editing your application.
 
----
+**Use Lovable**
 
-## 🚀 Tecnologias utilizadas
+Simply visit the [Lovable Project](https://lovable.dev/projects/7db7e384-65a7-44d3-9426-4685a85f8c16) and start prompting.
 
-- [React.js](https://reactjs.org/)
-- [Vite](https://vitejs.dev/) – build ultra rápido
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Lucide Icons](https://lucide.dev/) – ícones modernos
-- [Netlify](https://www.netlify.com/) – hospedagem e deploy
+Changes made via Lovable will be committed automatically to this repo.
 
----
+**Use your preferred IDE**
 
-## 🧑‍💻 Como rodar localmente
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-1. Clone o repositório:
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-```bash
-git clone https://github.com/Fabiano0306/cialu-amor-proprio.git
-cd cialu-amor-proprio
-Instale as dependências:
+Follow these steps:
 
-npm install
-Rode o projeto:
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
-Acesse em: http://localhost:5173
+```
 
-🌍 Deploy
-Este site é hospedado e atualizado automaticamente pelo Netlify a cada novo push no GitHub.
+**Edit a file directly in GitHub**
 
-🔗 Link de produção: https://cialu.netlify.app (ajuste esse link com o seu real)
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-🖼️ Imagem da logo
-A logo da CIALU está disponível em PNG com fundo transparente na pasta /public/lovable-uploads/.
+**Use GitHub Codespaces**
 
-📬 Contato
-Entre em contato pelo WhatsApp: (12) 99140-3657
-Siga no Instagram: @desenvolvedor_fabiano
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-👨‍💻 Desenvolvedor
-Fabiano Santos
+## What technologies are used for this project?
 
+This project is built with:
 
----
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-### ✅ Próximo passo:
+## How can I deploy this project?
 
-1. Crie um arquivo chamado `README.md` na raiz do projeto.
-2. Cole esse conteúdo.
-3. Faça o commit e push:
+Simply open [Lovable](https://lovable.dev/projects/7db7e384-65a7-44d3-9426-4685a85f8c16) and click on Share -> Publish.
 
-```bash
-git add README.md
-git commit -m "adiciona README com informações do projeto"
-git push
+## Can I connect a custom domain to my Lovable project?
 
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
