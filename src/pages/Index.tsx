@@ -244,7 +244,7 @@ const message = `Olá! Gostaria de finalizar minha compra:\n\n*Produtos:*\n${pro
   const featuredProducts = mockProducts.filter(product => product.featured);
 
   useEffect(() => {
-    document.title = "CIALU | Moda Feminina Elegante & Sofisticada – Vista Amor Próprio";
+    document.title = "CIALU | Elegância Sofisticada – Vista Amor Próprio";
   }, []);
 
   return (
