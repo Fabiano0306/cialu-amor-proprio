@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { set } from 'date-fns';
 import { toast } from "sonner";
 
+
 interface Product {
   id: number;
   name: string;
@@ -110,6 +111,9 @@ const Index = () => {
   const [cepInfo, setCepInfo] = useState<{ uf: string; localidade: string } | null>(null);
   const [frete, setFrete] = useState(0);
   
+  // controle de Entrega vs Retirada
+const [tipoEntrega, setTipoEntrega] = useState<"entrega" | "retirada" | "">("");
+
 
   // Função para adicionar produto ao carrinho
   const addToCart = (product: Product, size: string, quantity: number) => {
@@ -153,6 +157,15 @@ toast.success("Adicionado ao carrinho", {
 
   const [enderecoCompleto, setEnderecoCompleto] = useState("");
 
+  // Quando selecionar "Retirada em loja", zera os dados de entrega
+useEffect(() => {
+  if (tipoEntrega === "retirada") {
+    setFrete(0);
+    setCep("");
+    setCepInfo(null);
+    setEnderecoCompleto("");
+  }
+}, [tipoEntrega]);
 
   const calcularFrete = async () => {
     const cepLimpo = cep.replace(/\D/g, "");
@@ -189,36 +202,38 @@ toast.success("Adicionado ao carrinho", {
   };
 
   const getTotalPrice = () => cart.reduce((total, item) => total + item.price * item.quantity, 0);
-  const getTotalWithFrete = () => getTotalPrice() + frete;
+  const getTotalWithFrete = () => {
+  return tipoEntrega === "entrega" ? getTotalPrice() + frete : getTotalPrice();
+};
+
   const getTotalItems = () => cart.reduce((total, item) => total + item.quantity, 0);
 
-  const finalizePurchase = () => {
-    if (cart.length === 0 || !cepInfo) return;
+ const finalizePurchase = () => {
+  if (cart.length === 0) return;
+  // só exige CEP se for entrega
+  if (tipoEntrega === "entrega" && !cepInfo) return;
 
-    const orderDetails = cart.map(item =>
-      `${item.name} - Tamanho: ${item.selectedSize} - Quantidade: ${item.quantity} - Valor: R$${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
-    ).join('\n');
+  const produtos = cart.map(item =>
+    `- ${item.name}\n*Tamanho:* ${item.selectedSize} \n*Quantidade:* ${item.quantity} \n*Valor:* R$${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
+  ).join('\n\n');
 
-    const totalValue = getTotalWithFrete().toFixed(2).replace('.', ',');
-    const freteValue = frete.toFixed(2).replace('.', ',');
-    const message = `Olá! Gostaria de finalizar minha compra:\n
-*Produtos:*
-${cart.map(item => 
-  `- ${item.name}\n*Tamanho:* ${item.selectedSize} \n*Quantidade:* ${item.quantity} \n*Valor:* R$${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
-).join('\n\n')}
-\n---------------------------------\n
-*Informações de entrega:*\n
-*CEP:* ${cep}\n
-*Local:* ${cepInfo?.localidade} - ${cepInfo?.uf}\n
-*Endereço completo:* ${enderecoCompleto || "Não informado"}\n
-*Valor do Frete:* R$${frete.toFixed(2).replace('.', ',')}\n
-\n---------------------------------\n
-\n*Valor total com frete:* R$${getTotalWithFrete().toFixed(2).replace('.', ',')}`;
+  const freteTexto = tipoEntrega === "entrega"
+  ? `\n*CEP:* ${cep}\n*Local:* ${cepInfo?.localidade} - ${cepInfo?.uf}\n*Endereço completo:* ${enderecoCompleto || "Não informado"}\n*Valor do Frete:* R$${frete.toFixed(2).replace('.', ',')}\n`
+  : "\n*Opção:* Retirar em loja\n";
 
-    const whatsappUrl = `https://wa.me/5547996224032?text=${encodeURIComponent(message)}`;
 
-    window.open(whatsappUrl, '_blank');
-  };
+  const total = getTotalWithFrete().toFixed(2).replace('.', ',');
+
+  const totalTexto = tipoEntrega === "entrega"
+  ? `*Valor total com frete:* R$${total}`
+  : `*Valor total:* R$${total}`;
+
+const message = `Olá! Gostaria de finalizar minha compra:\n\n*Produtos:*\n${produtos}\n---------------------------------${freteTexto}\n---------------------------------\n${totalTexto}`;
+
+
+  const whatsappUrl = `https://wa.me/5547996224032?text=${encodeURIComponent(message)}`;
+  window.open(whatsappUrl, '_blank');
+};
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -727,37 +742,76 @@ ${cart.map(item =>
 
 
               {cart.length > 0 && (
-                <div className="border-t p-4">
+  <div className="border-t p-4">
 
-                  {/* Campo CEP */}
-                  <div className="mb-4 space-y-2">
-                    <label className="block text-sm font-medium font-inter">CEP</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Digite o CEP"
-                        value={cep}
-                        onChange={(e) => setCep(e.target.value)}
-                        className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
-                      />
-                      <Button onClick={calcularFrete}>Calcular</Button>
-                    </div>
-                    {cepInfo && (
-                      <p className="text-xs text-gray-600">Destino: {cepInfo.localidade} - {cepInfo.uf}</p>
-                    )}
-                  </div>
+    {/* Tipo de Entrega */}
+    <div className="mb-4">
+      <label className="block text-sm font-medium font-inter mb-2">
+        Como você prefere receber?
+      </label>
+      <div className="flex gap-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="tipoEntrega"
+            value="entrega"
+            checked={tipoEntrega === "entrega"}
+            onChange={() => setTipoEntrega("entrega")}
+          />
+          Entrega
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="tipoEntrega"
+            value="retirada"
+            checked={tipoEntrega === "retirada"}
+            onChange={() => setTipoEntrega("retirada")}
+          />
+          Retirar em loja
+        </label>
+      </div>
+    </div>
 
-                  <div className="space-y-2 mt-4">
-                    <label className="block text-sm font-medium font-inter">Endereço completo (Rua/Avenida e número)</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Rua das Flores, 123"
-                      value={enderecoCompleto}
-                      onChange={(e) => setEnderecoCompleto(e.target.value)}
-                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <br />
+    {/* Campos de CEP e Endereço só se for entrega */}
+    {tipoEntrega === "entrega" && (
+      <>
+        <div className="mb-4 space-y-2">
+          <label className="block text-sm font-medium font-inter">CEP</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Digite o CEP"
+              value={cep}
+              onChange={(e) => setCep(e.target.value)}
+              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+            />
+            <Button onClick={calcularFrete}>Calcular</Button>
+          </div>
+          {cepInfo && (
+            <p className="text-xs text-gray-600">
+              Destino: {cepInfo.localidade} – {cepInfo.uf}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2 mt-4">
+          <label className="block text-sm font-medium font-inter">
+            Endereço completo (Rua/Avenida e número)
+          </label>
+          <input
+            type="text"
+            placeholder="Ex: Rua das Flores, 123"
+            value={enderecoCompleto}
+            onChange={(e) => setEnderecoCompleto(e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+          />
+        </div>
+      </>
+    )}
+
+
+                  
 
 
                   {/* Totais */}
@@ -792,7 +846,8 @@ ${cart.map(item =>
                     <Button
                       className="w-full bg-green-600 hover:bg-green-700 text-white font-inter"
                       onClick={finalizePurchase}
-                      disabled={!cepInfo}
+                      disabled={
+  (tipoEntrega === "entrega" && !cepInfo) || tipoEntrega === ""}
                     >
                       Finalizar Compra
                     </Button>
